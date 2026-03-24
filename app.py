@@ -4,8 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# banco
+# CONFIG BANCO
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 db = SQLAlchemy(app)
 
 # ------------------------
@@ -27,6 +29,14 @@ class Orcamento(db.Model):
 
 
 # ------------------------
+# CRIA BANCO AUTOMÁTICO (ESSENCIAL PRO RENDER)
+# ------------------------
+
+with app.app_context():
+    db.create_all()
+
+
+# ------------------------
 # ROTAS
 # ------------------------
 
@@ -35,10 +45,16 @@ def home():
     return "API AMG funcionando 🚀"
 
 
-# criar cliente
+# ------------------------
+# CLIENTES
+# ------------------------
+
 @app.route("/clientes", methods=["POST"])
 def criar_cliente():
     data = request.json
+
+    if not data or "nome" not in data or "telefone" not in data:
+        return jsonify({"erro": "Dados inválidos"}), 400
 
     cliente = Cliente(
         nome=data["nome"],
@@ -51,7 +67,6 @@ def criar_cliente():
     return jsonify({"msg": "Cliente criado"})
 
 
-# listar clientes
 @app.route("/clientes", methods=["GET"])
 def listar_clientes():
     clientes = Cliente.query.all()
@@ -67,15 +82,21 @@ def listar_clientes():
     return jsonify(resultado)
 
 
-# criar orçamento
+# ------------------------
+# ORÇAMENTOS
+# ------------------------
+
 @app.route("/orcamentos", methods=["POST"])
 def criar_orcamento():
     data = request.json
 
+    if not data or "cliente_id" not in data:
+        return jsonify({"erro": "Dados inválidos"}), 400
+
     orc = Orcamento(
         cliente_id=data["cliente_id"],
-        descricao=data["descricao"],
-        valor=data["valor"],
+        descricao=data.get("descricao", ""),
+        valor=data.get("valor", 0),
         status="pendente"
     )
 
@@ -85,7 +106,6 @@ def criar_orcamento():
     return jsonify({"msg": "Orçamento criado"})
 
 
-# listar orçamentos
 @app.route("/orcamentos", methods=["GET"])
 def listar_orcamentos():
     orcs = Orcamento.query.all()
@@ -104,9 +124,8 @@ def listar_orcamentos():
 
 
 # ------------------------
+# RUN LOCAL
+# ------------------------
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
