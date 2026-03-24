@@ -8,9 +8,3 @@ def home():
 
 if __name__ == "__main__":
     app.run()
-git init
-git add .
-git commit -m "backend pronto"
-git branch -M main
-git remote add origin https://github.com/vakiutialexandre/amg-backend.git
-git push -u origin main
